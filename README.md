@@ -5,12 +5,12 @@ This is a live secure tunnel(a lightweight nodejs version of ngrok(https://ngrok
 
 Why & How it works
 ----------
-Sometimes, we have to test or live changing things on a public server with public domain (e.g development with public services [Wechat, Weibo, Alipay..], or mobile device testing behind NAT or firewall), which usually requires server reloading, proxy configuration, ssh login, re-deploying .... It will be much simpler if we could proxy the requests from public server to our own local mechine, and testing/debuging on the local server.
-But if you are behind NAT or firewall(e.g secure network, mobile netwrok), the normal proxy engine(e.g. nginx) will not work. An easy way to do that is setup a tunnel/connection to help you relay request from public server to your local server and relay the result from your local server back to public server.
+Sometimes, we have to test or live add/del things on a public server with public domain (e.g development with public services [Wechat, Weibo, Alipay..], or mobile device testing behind NAT or firewall), which usually requires server reloading, proxy configuration, ssh login, re-deploying .... It will be much simpler if we could proxy the requests from public server to our own local mechine, and testing/debuging on the local server.
+But if you are behind NAT or firewall(e.g secure network, mobile netwrok), the normal proxy engine(e.g. nginx) will not work. A principle to achieve that is setup a tunnel/connection to help you relay packages between the public server and your local server.
 
-The ngrok(https://ngrok.com) is a well-known public product and service to do this. But it is a general standalone native server written in c/c++, powerful but little heavy in most of cases. Besides, the public service is blocked in China, and setup a private ngrok server is hard and complex.
+The ngrok(https://ngrok.com) is a well-known public service to do this. But it is a general native server written in c/c++, powerful but little heavy in most of cases. Besides, the public service is blocked in China, and setup a private ngrok server is hard and complex.
 
-The NLT[node-local-tunnel] is a pure nodejs module, it will setup up a live secure tunnel( by websocket), catch all/part[target ones] of the requests from one server, live redirect/relay them to a local server. Easy use, easy configure.
+The NLT[node-local-tunnel] is a pure nodejs module, only few lines, it will setup up a live secure tunnel (by websocket), catch all/part[target ones] of the requests from one server, live redirect/relay them to a local server. Easy use, easy configure.
 
 Installing
 ----------
@@ -18,7 +18,7 @@ This is a typical nodejs module, so just install by npm
 
     # npm install node-local-tunnel
 
-Then try examples in /test, see how it works to redirect requests to your local server
+Try examples in /test(https://github.com/lslzl3000/node-local-tunnel/tree/master/test), see how it works to redirect requests to your local server
 
 How to use
 ----------
@@ -155,7 +155,7 @@ and send back four main values from dev server
     res : body,
     headers : res.headers
 
-This is works fine with Express, not test raw nodejs request yet. Please welcome to make changes to enable more custom data (.e.g multi-part) for this modules.
+This is works fine with Express, but not test raw nodejs request yet. Please welcome to make changes to enable more custom features (.e.g multi-part) for this module.
 
 
 
