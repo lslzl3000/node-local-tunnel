@@ -3,9 +3,9 @@ var util = require('util');
 function server(options){
 	options = util._extend({ssl:false, port:12345}, options);
 	// 1. [server itself]connect to the ws server
-	var client, path, auth;
+	var client, path, filter;
 	var serverRes = {}, serverNext = {}; // for handle req object
-	var socket = require('socket.io-client')('ws'+(options.ssl?'s':'')+'://localhost:' + options.port );
+	var socket = require('socket.io-client')('ws'+(options.ssl?'s':'')+'://localhost:' + options.port + (options.auth ? '?username='+options.auth.username +'&password='+options.auth.password : '') );
 	// 2. init self on ws server
 	socket.on('connect', function(){
 		console.log('[NLT] Connected to the tunnel')
@@ -14,7 +14,7 @@ function server(options){
 	// 3. init client obj when server give back the client info
 	socket.on('client', function(data){
 		if(data == false){
-			client = null; path = null; auth = null;
+			client = null; path = null; filter = null;
 			for(i in serverNext)
 				serverNext[i]();
 			serverRes = {};
@@ -23,7 +23,7 @@ function server(options){
 			console.log('[NLT] remote server online')
 			client = true;
 			path = data.path;
-			auth = data.auth;
+			filter = data.filter;
 		}
 	});
 	// 4. handle res from WS, then reply data in nowmal way\
@@ -43,7 +43,7 @@ function server(options){
 	});
 	// handle disconnect, empty everthing, go on next()
 	socket.on('disconnect', function(){
-		client = null; path = null; auth = null;
+		client = null; path = null; filter = null;
 		for(i in serverNext)
 			serverNext[i]();
 		serverRes = {};
@@ -53,7 +53,7 @@ function server(options){
 	return function(req, res, next){
 		//pass to local server if the local client is online,
 		if(client){
-			// check path & auth
+			// check path & filter
 			var pass = true;
 			try{
 				if(path && path.length > 0){
@@ -68,8 +68,8 @@ function server(options){
 						}
 					}
 				}
-				if(pass && auth){
-					for(i in auth){
+				if(pass && filter){
+					for(i in filter){
 						var args = i.split('.');
 						var evalString = 'req';
 						for(var j = 0; j < args.length; j++){
@@ -82,13 +82,12 @@ function server(options){
 							pass = false;
 							break;
 						}else{
-							console.log(auth[i], auth[i].match(/[\W+]$/));
-							if(auth[i] && auth[i].match(/[\W+]$/)){
-								if( !reqValue.match(auth[i].slice(1,auth[i].length-1)) ){
+							if(filter[i] && filter[i].match(/[\W+]$/)){
+								if( !reqValue.match(filter[i].slice(1,filter[i].length-1)) ){
 									pass = false;
 									break;
 								}
-							}else if( reqValue != auth[i] ){
+							}else if( reqValue != filter[i] ){
 								pass = false;
 								break;
 							}
@@ -99,7 +98,7 @@ function server(options){
 				console.log('[NLT] error', e);
 				pass = false;
 			}
-			// only relay those passed(path & auth) requests
+			// only relay those passed(path & filter) requests
 			if(pass){
 				var _rid = Date.now();
 				serverRes[_rid] = res;
@@ -120,7 +119,7 @@ function server(options){
 function client(options){
 	options = util._extend({port:12345, ssl:false}, options);
 	var request = require('request');
-	var socket = require('socket.io-client')('ws'+(options.ssl?'s':'')+'://'+options.remoteHost + ':' + options.port );
+	var socket = require('socket.io-client')('ws'+(options.ssl?'s':'')+'://'+options.remoteHost + ':' + options.port + (options.auth ? '?username='+options.auth.username +'&password='+options.auth.password : '') );
 	socket.on('connect', function(){
 		console.log('[NLT] Local server online, ready to handle remote requests');
 		socket.emit('init', util._extend(options,{_type:'localServer'}));
@@ -144,6 +143,9 @@ function client(options){
 	socket.on('disconnect', function(){
 		console.log('[NLT] Disconnect');
 	});
+	socket.on('error', function(reason){
+		console.log('[NLT] Cannot connect server:'+reason)
+	})
 	return function(req, res, next){
 		next();
 	}
@@ -154,12 +156,19 @@ function init(options){
 	options = util._extend({ssl:null, port:12345}, options);
 	var serverWorkers = {}; // save main server sockets
 	var clientSocket; // save local server socket
-	var path, auth; // save path & auth obj
+	var path, filter; // save path & filter obj
 	var wsServer;
 	if(options.ssl)
 		wsServer = require('https').createServer(options.ssl);
 	else wsServer = require('http').createServer();
 	var io = require('socket.io')(wsServer);
+	
+		io.set('authorization', function (handshakeData, callback) {
+			if(handshakeData.url.match('username='+options.auth.username+'&password='+options.auth.password))
+	        	callback(null, true); // error first callback style 
+	        else callback('no auth', false);
+	    });
+
 	io.on('connection', function(socket){
 		// 0. save server sockets & local socket
 		socket.on('init', function(data){
@@ -168,8 +177,8 @@ function init(options){
 				clientSocket = socket;
 				if(data.path)
 					path = data.path;
-				if(data.auth)
-					auth = data.auth;
+				if(data.filter)
+					filter = data.filter;
 
 				for(i in serverWorkers)
 					serverWorkers[i].emit('client', data);

@@ -7,7 +7,11 @@ var options = {
 	// ssl : {	// give ssl cert if you want setup a ssl secure tunnel
 	// 	cert : fs.readFileSync('./ssl-cert.pem'),
 	// 	key : fs.readFileSync('./ssl-key.pem')
-	// }
+	// },
+	auth : { // set user&password for auth connection
+		username:'admin',
+		password:'123456'	
+	}
 }
 if(cluster.isMaster){
 	// init tunnel in master
