@@ -1,9 +1,10 @@
 {
   "name": "node-local-tunnel",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A live secure tunnel redirect public requests to your own local server befind a NAT or firewall",
   "main": "index.js",
   "dependencies": {
+    "querystring": "^0.2.0",
     "request": "^2.65.0",
     "socket.io": "^1.3.7",
     "socket.io-client": "^1.3.7"

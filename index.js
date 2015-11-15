@@ -1,4 +1,5 @@
 var util = require('util');
+var qs = require('querystring');
 
 function server(options){
 	options = util._extend({ssl:false, port:12345}, options);
@@ -29,14 +30,9 @@ function server(options){
 	// 4. handle res from WS, then reply data in nowmal way\
 	socket.on('res', function(data){
 		var _rid = data._rid;
-		if(data.headers){
-			for(i in data.headers)
-				serverRes[_rid].setHeader(i, data.headers[i])
-		}
-		if(data.err){
-			serverRes[_rid].status(data.statusCode).send(data.err);
-		}else
-		serverRes[_rid].status(data.statusCode).send(data.res);
+		serverRes[_rid].writeHead(data.statusCode || 200, data.headers || {});
+		serverRes[_rid].write(data.err || data.res);
+		serverRes[_rid].end();
 
 		delete serverRes[_rid];
 		delete serverNext[_rid];
@@ -103,14 +99,40 @@ function server(options){
 				var _rid = Date.now();
 				serverRes[_rid] = res;
 				serverNext[_rid] = next;
+				for(i in req.rawHeaders){
+					var header = req.rawHeaders[i].toLowerCase();
+					if( req.headers[header] ){
+						req.headers[req.rawHeaders[i]] = req.headers[header];
+						delete req.headers[header];
+					}
+				}
 				// pass the req main content to local server via WS
-				socket.emit('req', {
-					_rid : _rid,
-					url : req._parsedUrl.href,
-					headers:req.headers,
-					method : req.method,
-					body : req.body
-				});
+				if(!req.body && req.method != 'GET'){
+					var body = '';
+					req.on('data', function(chunk){
+						body += chunk;
+						//TODO: should set a limit for data
+					})
+					req.on('end', function(){
+						req.body = qs.parse(body);
+						socket.emit('req', {
+							_rid : _rid,
+							url : req._parsedUrl.href,
+							headers:req.headers,
+							method : req.method,
+							form : req.body
+						});
+					})
+				}else{
+					socket.emit('req', {
+						_rid : _rid,
+						url : req._parsedUrl.href,
+						headers:req.headers,
+						method : req.method,
+						form : req.body
+					});
+				}
+				
 			}else next();
 		}else
 			next();
@@ -134,10 +156,21 @@ function client(options){
 		}
 		reqOpt = util._extend(reqOpt,data);
 		reqOpt.url = options.localBase+data.url;
-		// construct a request to local server
+		reqOpt.encoding = null;
+		// then construct a request to local server
 		request(reqOpt, function(err, response, body){
+			if(err)
+				console.log('[NLT] relay error', err);
+			else
+				for(i in response.rawHeaders){
+					var header = response.rawHeaders[i].toLowerCase();
+					if( response.headers[header] ){
+						response.headers[response.rawHeaders[i]] = response.headers[header];
+						delete response.headers[header];
+					}
+				}
 			// then send response back to main server
-			socket.emit('res', {_sid: data._sid, _rid: data._rid, statusCode: response.statusCode, err:err, res:body, headers:response.headers})
+			socket.emit('res', {_sid: data._sid, _rid: data._rid, statusCode: response ? response.statusCode : 500, err:err?err.toString():null, res:body, headers: response ? response.headers : {}})
 		})
 	});
 	socket.on('disconnect', function(){

@@ -26,27 +26,29 @@ How to use
 ```javascript
     var app = require('express')(), // work with express
     
+    // on remote server, init NLT first
     var NLTunnel = require('node-local-tunnel');
     NLTunnel.init();  // init the tunnel server
     
-    var	bodyParser = require('body-parser'),
-	compression = require('compression');
-	...
-   	// you may apply some public middleware first 
-	app.use(bodyParser.json());
-	app.use(compression());
-	app.use(express.static('assets/')); // if you want to send static files from dev server, put this after NLT
-	...
+    // then hannel all logic requests by app.use
+    app.use( NLTunnel.server() );
+
+    // You can also apply routers to relay specific requests, e.g.
+    // app.get('/foo', NLTunnel.server() ); // only relay /foo with 'GET' request 
     
-    //then if you want handle all requests, use NLT before all logic middleware
-    app.use( NLTunnel.server() ); // easy relay all requests by app.use
-    // app.use(express.static('assets/')); // if you want to send static files from dev server, put this after NLT
-    .......
+    // better use NLT before other middleware
+    var	bodyParser = require('body-parser'),
+		  compression = require('compression');
+    ...
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded());
+    app.use(compression());
+    app.use(express.static('assets/')); // if you don't want relay static files, put this line before NLT
+    ...
+
     app.use('/someurl', function(req, res, next){
       // Your codes ...
     });
-    // but you can also apply on specific router
-    // app.get('/foo', NLTunnel.server() ); e.g. only relay /foo with 'GET' request  
     .......
     app.listen(80);
 ```
@@ -66,6 +68,7 @@ How to use
 	compression = require('compression');
 	...
 	app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded());
 	app.use(compression());
 	app.use(express.static('assets/'));
 	...
@@ -148,7 +151,7 @@ Currently, the relay server only send four common values from req Express object
     url : req._parsedUrl.href,
     headers : req.headers,
     method : req.method,
-    body : req.body
+    form : req.body
 
 and send back four main values from dev server 
 
