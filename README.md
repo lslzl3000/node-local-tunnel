@@ -28,23 +28,25 @@ How to use
     
     var NLTunnel = require('node-local-tunnel');
     NLTunnel.init();  // init the tunnel server
-    app.use( NLTunnel.server() ); // then easy relay all requests by app.use
-    // works fine with express router, e.g. only relay /foo with 'GET' request  
-    // app.get('/foo', NLTunnel.server() ); 
     
-    // better use NLT before other middleware
     var	bodyParser = require('body-parser'),
-		  cookieParser = require('cookie-parser'),
-		  compression = require('compression');
-		
-		app.use(bodyParser.json());
-		app.use(bodyParser.urlencoded());
-		app.use(compression());
-		app.use(cookieParser(config.cookies.signedKey));
-	  
+	compression = require('compression');
+	...
+   	// you may apply some public middleware first 
+	app.use(bodyParser.json());
+	app.use(compression());
+	app.use(express.static('assets/')); // if you want to send static files from dev server, put this after NLT
+	...
+    
+    //then if you want handle all requests, use NLT before all logic middleware
+    app.use( NLTunnel.server() ); // easy relay all requests by app.use
+    // app.use(express.static('assets/')); // if you want to send static files from dev server, put this after NLT
+    .......
     app.use('/someurl', function(req, res, next){
-      // some codes ...
+      // Your codes ...
     });
+    // but you can also apply on specific router
+    // app.get('/foo', NLTunnel.server() ); e.g. only relay /foo with 'GET' request  
     .......
     app.listen(80);
 ```
@@ -58,19 +60,18 @@ How to use
       remoteHost : 'your-public-server.com',
       localBase : 'http://localhost:3000'
     };
-    NLTunnel.client(options); // just call client() with options, you are free to go
+    NLTunnel.client(options); // just call client() somewhere with options, you are free to go
     
     var	bodyParser = require('body-parser'),
-		  cookieParser = require('cookie-parser'),
-		  compression = require('compression');
-		
-		app.use(bodyParser.json())
-		app.use(bodyParser.urlencoded());
-		app.use(compression());
-		app.use(cookieParser(config.cookies.signedKey));
-	  
+	compression = require('compression');
+	...
+	app.use(bodyParser.json());
+	app.use(compression());
+	app.use(express.static('assets/'));
+	...
+
     app.use('/someurl', function(req, res, next){
-      // some codes ...
+      // Your codes ...
     });
     .......
     app.listen(3000);
@@ -96,11 +97,12 @@ How to use
 ## options for local/dev server
 ```javascript
     var options = {
+      port : 12345, // remote NLT server port, 12345 by default
       remoteHost : 'public-server-domain',	// remote server hostname, e.g example.com
       localBase : 'http://localhost:3000', // local server base url
       path : [ '/foo' ],	// a filter to check req.url, set it empty if you want relay all requests
       filter : {	// a bypass to identify requests, only relay those who fit all values in req obj
-        // some useful examples, you set any target to match what you want from the request obj
+        // some useful examples, set any target to match what you want from the request obj
         ip:'[127.0.0.1]', 	// match req.ip, check from which ip comes from 127.0.0.1
         hostname:'localhost', // match req.hostnem, check from which host
         'headers.user-agent':'[Chrome]' // check req.headers[user-agent], check if chrome
@@ -125,12 +127,12 @@ which means we only want req.url only **equles to** '/foo' or '/getOrder', but
 
     path : [ '[/foo]', '[/getOrder/\\W+]']
 
-means we want to relay all requests whose url **match** '/foo' (e.g. '/foo','/foolish','/foo/name'...) and '/getOrder/...' (e.g. '/getOrder/name', '/getOrder/:order_id')
+means we want to relay all requests whose url **matchs** '/foo' (e.g. '/foo','/foolish','/foo/name'...) and '/getOrder/...' (e.g. '/getOrder/name', '/getOrder/:order_id')
 
 The same rule apply with opionts.filter, e.g.
 
     hostname : 'example.com' // means filter those hostname **equles to** 'example.com'
-    hostname : '[example.com]' // means filter those hostname **match** 'example.com', which also contains 'sub.example.com'
+    hostname : '[example.com]' // means filter those hostname **matchs** 'example.com', which also contains 'sub.example.com'
 
 If you want to check sub-layer object value in req obj(e.g cookies or userAgent), just write it, e.g.
 
