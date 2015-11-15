@@ -196,11 +196,12 @@ function init(options){
 	else wsServer = require('http').createServer();
 	var io = require('socket.io')(wsServer);
 	
-		io.set('authorization', function (handshakeData, callback) {
-			if(handshakeData.url.match('username='+options.auth.username+'&password='+options.auth.password))
-	        	callback(null, true); // error first callback style 
-	        else callback('no auth', false);
-	    });
+	if(options.auth)	
+	io.set('authorization', function (handshakeData, callback) {
+		if(handshakeData.url.match('username='+options.auth.username+'&password='+options.auth.password))
+        	callback(null, true); // error first callback style 
+        else callback('no auth', false);
+    });
 
 	io.on('connection', function(socket){
 		// 0. save server sockets & local socket
