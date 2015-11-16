@@ -144,7 +144,7 @@ If you want to check sub-layer object value in req obj(e.g cookies or userAgent)
 
 Useage tips
 -----------
-  1. If you know how nodejs/express middleware works, you should know where to use NLT.server() in your codes
+  1 If you know how nodejs/express middleware works, you should know where to use NLT.server() in your codes
 ```javascript
     app.use(NLT.server()) // global handle
 
@@ -164,7 +164,7 @@ Useage tips
     app.use(express.static())
     app.use(NLT.server()) 
 ```
-  2. Put NLT options in a config.js, make the main code clean and easy management
+  2 Put NLT options in a config.js, make the main code clean and easy management
 ```javascript
     ...
     var config = require('./config.js');
@@ -174,7 +174,7 @@ Useage tips
     ...
     // or NLT.client(config.NLT.client);
 ```
-  3. You can easily code one js but run different params/env to start client/server mode
+  3 You can easily code one js but run different params/env to start client/server mode
 ```javascript
     ...
     if(process.env.DEV == true) // check whatever you want
@@ -183,7 +183,7 @@ Useage tips
       NLT.init(config.NLT.server); // init NLT tunnel in public server
     ...
 ```
-  4. if you use nodejs cluster mode, you should put NLT.init()/NLT.client() in master, and put app.use(NLT.server()) in cluster
+  4 if you use nodejs cluster mode, you should put NLT.init()/NLT.client() in master, and put app.use(NLT.server()) in cluster
 ```javascript
     ... 
     // setup NLT server in master
@@ -208,7 +208,7 @@ Useage tips
     }
     ...
 ```
-  5. Certainly, you can use NLT as a standalone relay agent in a public server, and relay everything back to your own PC/laptop/.. where you want.
+  5 Certainly, you can use NLT as a standalone relay agent in a public server, and relay everything back to your own PC/laptop/.. where you want.
 
 Limitation & work to do
 -----------------------
