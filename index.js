@@ -146,6 +146,12 @@ function client(options){
 		console.log('[NLT] Local server online, ready to handle remote requests');
 		socket.emit('init', util._extend(options,{_type:'localServer'}));
 	});
+	socket.on('hold', function(){
+		console.log('[NLT] New client online, Sorry I have to put you on hold...')
+	})
+	socket.on('back', function(){
+		console.log('[NLT] You are back online, ready to handle remote requests')
+	})
 	socket.on('req', function(data){
 		// don't follow redirect and ignore https cert error
 		var reqOpt = {
@@ -173,8 +179,8 @@ function client(options){
 			socket.emit('res', {_sid: data._sid, _rid: data._rid, statusCode: response ? response.statusCode : 500, err:err?err.toString():null, res:body, headers: response ? response.headers : {}})
 		})
 	});
-	socket.on('disconnect', function(){
-		console.log('[NLT] Disconnect');
+	socket.on('disconnect', function(reason){
+		console.log('[NLT] Disconnect', reason);
 	});
 	socket.on('error', function(reason){
 		console.log('[NLT] Cannot connect server:'+reason)
@@ -188,8 +194,8 @@ function client(options){
 function init(options){
 	options = util._extend({ssl:null, port:12345}, options);
 	var serverWorkers = {}; // save main server sockets
-	var clientSocket; // save local server socket
-	var path, filter; // save path & filter obj
+	var clientSocket = []; // save local server socket
+	var clientOptions = []; // save optioin obj
 	var wsServer;
 	if(options.ssl)
 		wsServer = require('https').createServer(options.ssl);
@@ -208,24 +214,26 @@ function init(options){
 		socket.on('init', function(data){
 			if(data._type == 'localServer'){
 				socket._type = 'localServer';
-				clientSocket = socket;
-				if(data.path)
-					path = data.path;
-				if(data.filter)
-					filter = data.filter;
-
+				if(clientSocket.length>0)
+					clientSocket.slice(-1)[0].emit('hold');			
+				// then handle new one
+				clientSocket.push(socket);
+				clientOptions.push(data);
+				// inform server the new client
 				for(i in serverWorkers)
 					serverWorkers[i].emit('client', data);
-			}else{
+			}else if(data._type == 'server'){
 				socket._type = 'server';
 				serverWorkers[socket.id] = socket;
+			}else{
+				// ignore this connection
 			}
 		})
 		// handle req from server, relay data to client
 		socket.on('req', function(data){
-			if(clientSocket){
+			if(clientSocket.length > 0){
 				data._sid = socket.id;
-				clientSocket.emit('req', data)
+				clientSocket.slice(-1)[0].emit('req', data)
 			}
 		})
 		// handle res from client, relay the data to the server
@@ -233,12 +241,29 @@ function init(options){
 			if(serverWorkers[data._sid])
 				serverWorkers[data._sid].emit('res', data);
 		});
-		socket.on('disconnect', function(){
-			if(socket._type == 'localServer')
-			{
-				for(i in serverWorkers)
-					serverWorkers[i].emit('client', false);
-			}else
+		socket.on('disconnect', function(reason){
+			if(socket._type == 'localServer'){
+				var last = false;
+				for(i in clientSocket){
+					if(socket.id == clientSocket[i].id){
+						if(i == clientSocket.length-1)
+							last = true;
+						clientSocket.splice(i, 1);
+						clientOptions.splice(i,1);
+						break;
+					}
+				}
+				if(clientSocket.length > 0 && clientOptions.length > 0){
+					if(last)
+						clientSocket.slice(-1)[0].emit('back');	
+					for(i in serverWorkers)
+						serverWorkers[i].emit('client', clientOptions.slice(-1)[0]);
+				}
+				else
+					for(i in serverWorkers)
+						serverWorkers[i].emit('client', false);
+			}
+			else if(socket._type == 'server')
 				delete serverWorkers[socket.id];
 		});
 	});

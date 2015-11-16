@@ -142,25 +142,96 @@ If you want to check sub-layer object value in req obj(e.g cookies or userAgent)
     'headers.user-agent' : '[Chrome]' // check user-agent value in headers, match target words
     'headers.cookie' :  '[login=true]' // check cookie value in headers, match target words
 
+Useage tips
+-----------
+  1. If you know how nodejs/express middleware works, you should know where to use NLT.server() in your codes
+```javascript
+    app.use(NLT.server()) // global handle
+
+    VS
+
+    app.use('/someurl', NLT.server())  // handle specific url
+```
+
+```javascript
+    // handle before static middleware, which means also realy static files
+    app.use(NLT.server())
+    app.use(express.static()) 
+
+    VS
+  
+    // handle after static, which means use static files on the remote server
+    app.use(express.static())
+    app.use(NLT.server()) 
+```
+  2. Put NLT options in a config.js, make the main code clean and easy management
+```javascript
+    ...
+    var config = require('./config.js');
+    var NLT = require('node-local-tunnel');
+    ...
+    NLT.init(config.NLT.server); // or NLT.server(config.NLT.server) 
+    ...
+    // or NLT.client(config.NLT.client);
+```
+  3. You can easily code one js but run different params/env to start client/server mode
+```javascript
+    ...
+    if(process.env.DEV == true) // check whatever you want
+      NLT.client(config.NLT.client); // init client in dev server
+    else 
+      NLT.init(config.NLT.server); // init NLT tunnel in public server
+    ...
+```
+  4. if you use nodejs cluster mode, you should put NLT.init()/NLT.client() in master, and put app.use(NLT.server()) in cluster
+```javascript
+    ... 
+    // setup NLT server in master
+    if(cluster.isMaster){
+      ...
+
+      if(process.env.DEV)
+        NLT.client(config.NLT.client); // init client in master
+      else
+        NLT.init(config.NLT.server); // init NLT tunnel
+
+      ...
+    }
+    else{
+      ...
+
+      // user in public server
+      if(!process.env.DEV)
+        app.use(NLT.server(config.NLT.server));
+
+      ...
+    }
+    ...
+```
+  5. Certainly, you can use NLT as a standalone relay agent in a public server, and relay everything back to your own PC/laptop/.. where you want.
+
 Limitation & work to do
 -----------------------
 
-This is a very simple module rightnow, bugs should be found, please welcome to send issues.
-Currently, the relay server only send four common values from req Express object in public server
+This is a very simple module rightnow, I can't promise no bugs, please welcome to send issues.
 
-    url : req._parsedUrl.href,
-    headers : req.headers,
-    method : req.method,
-    form : req.body
+Currently, this module will only work with one dev client(enough for most of cases, may update for multi-tunnels), if you try to connect with multiple dev clients, NLT will only relay requests between the latest one, put others on hlod.
+
+Besides, the relay server only send four common values from req
+
+    url, including query strings
+    method, GET, PUT, POST, DELETE ...
+    body, form data append on POST/PUT ....
+    and headers, including user-agent, cookie, ETag ...
 
 and send back four main values from dev server 
 
-    statusCode : res.statusCode,
-    err : err,
-    res : body,
-    headers : res.headers
+    statusCode, 200/404/302/500 ...
+    err, error messages from request
+    body, main response data
+    and headers, including set-cookie, encoding, ETag ....
 
-This is works fine with Express, but not test raw nodejs request yet. Please welcome to make changes to enable more custom features (.e.g multi-part) for this module.
+Please welcome to make changes to enable more custom features (.e.g relay multi-part data) for this module.
 
 
 
