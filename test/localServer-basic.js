@@ -9,8 +9,8 @@ var options = {
 	localBase : 'http://localhost:3001', // local server base url
 	path : [],	// a filter url list to be redirected by the tunnel, set it empty if you want send all requests
 	filter : {	// a bypass to identify the requests, only send those fit all values below
-		ip:'[::]', 	// come which ip
-		hostname:'localhost', // from what host
+		ip:'[::]', 	// come which ip (req.ip is powered by Express, you may need to find ip in other framework or pure Nodejs)
+		hostname:'localhost', // from what host (same above, req.hostname is powered by Express)
 		'headers.user-agent':'[Chrome]' // example to check if user-agent is Chrome, set any match you want from the request
 	},
 	auth : {
@@ -31,11 +31,11 @@ app.use(compression());
 app.use(express.static('assets/'));
 
 app.use('/foo',function(req, res, next){
-	console.log(req.query, req.body);
+	console.log('querys:', req.query, 'body:', req.body);
 	res.send('ok from 3001')
 })
 app.use('/foo/:id',function(req, res, next){
-	console.log(req.query, req.body, req.params.id);
+	console.log('querys:', req.query, 'body:', req.body, 'params:', req.params.id);
 	res.send('ok from 3001')
 })
 app.listen(3001);

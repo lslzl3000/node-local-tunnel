@@ -47,6 +47,12 @@ function server(options){
 	});
 
 	return function(req, res, next){
+		if(typeof next == 'undefined')
+			next = function(){
+				res.writeHead(404);
+				res.write('[NLT]404 Not Found');
+				res.end();
+			}
 		//pass to local server if the local client is online,
 		if(client){
 			// check path & filter
@@ -117,7 +123,7 @@ function server(options){
 						req.body = qs.parse(body);
 						socket.emit('req', {
 							_rid : _rid,
-							url : req._parsedUrl.href,
+							url : req._parsedUrl ? req._parsedUrl.href : req.url,
 							headers:req.headers,
 							method : req.method,
 							form : req.body
@@ -126,7 +132,7 @@ function server(options){
 				}else{
 					socket.emit('req', {
 						_rid : _rid,
-						url : req._parsedUrl.href,
+						url : req._parsedUrl ? req._parsedUrl.href : req.url,
 						headers:req.headers,
 						method : req.method,
 						form : req.body

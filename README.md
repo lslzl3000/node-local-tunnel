@@ -106,8 +106,8 @@ How to use
       path : [ '/foo' ],	// a filter to check req.url, set it empty if you want relay all requests
       filter : {	// a bypass to identify requests, only relay those who fit all values in req obj
         // some useful examples, set any target to match what you want from the request obj
-        ip:'[127.0.0.1]', 	// match req.ip, check from which ip comes from 127.0.0.1
-        hostname:'localhost', // match req.hostnem, check from which host
+        ip:'[127.0.0.1]', 	// match req.ip (hint. req.ip is a powered by Express, you may need to find ip in req.headers['x-forwarded-for'] || req.connection.remoteAddress || ... in other framework or pure Nodejs)
+        hostname:'localhost', // match req.hostnaem, check from which host (same above, req.hostname is powered by Express, use headers.host in general way)
         'headers.user-agent':'[Chrome]' // check req.headers[user-agent], check if chrome
       },
       auth : { // auth info to connect to the relay server 
@@ -136,6 +136,8 @@ The same rule apply with opionts.filter, e.g.
 
     hostname : 'example.com' // means filter those hostname **equles to** 'example.com'
     hostname : '[example.com]' // means filter those hostname **matchs** 'example.com', which also contains 'sub.example.com'
+
+    hint : req.hostname is powered by Express, you may find 'headers.host' in a general request
 
 If you want to check sub-layer object value in req obj(e.g cookies or userAgent), just write it, e.g.
 
