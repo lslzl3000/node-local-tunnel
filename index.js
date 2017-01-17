@@ -169,6 +169,8 @@ function client(options){
 		reqOpt = util._extend(reqOpt,data);
 		reqOpt.url = options.localBase+data.url;
 		reqOpt.encoding = null;
+		// fix error [socket hang up], no need to set content-length in request headers
+		delete reqOpt.headers['Content-Length'];
 		// then construct a request to local server
 		request(reqOpt, function(err, response, body){
 			if(err)
