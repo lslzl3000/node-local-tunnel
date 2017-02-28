@@ -105,9 +105,10 @@ function server(options){
 				var _rid = Date.now();
 				serverRes[_rid] = res;
 				serverNext[_rid] = next;
+				// check lowercase headers(e.g parsed by express), use raw headers
 				for(i in req.rawHeaders){
 					var header = req.rawHeaders[i].toLowerCase();
-					if( req.headers[header] ){
+					if( header != req.rawHeaders[i] && req.headers[header] ){
 						req.headers[req.rawHeaders[i]] = req.headers[header];
 						delete req.headers[header];
 					}
