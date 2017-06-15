@@ -277,9 +277,9 @@ function init(options){
 		});
 	});
 	wsServer.listen(options.port).on('listening', function(){
-		console.log('[NLT] Tunnel is ready');
+		console.log('[NLT] Server is ready on port ' + options.port);
 	}).on('error', function(e){
-		console.log('[NLT] Cannot setup a node-local-tunnel tunnel')
+		console.log('[NLT] Setup error', e)
 	});
 }
 

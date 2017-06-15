@@ -210,7 +210,7 @@ Useage tips
     }
     ...
 ```
-  5 Certainly, you can use NLT as a standalone relay agent in a public server, and relay everything back to your own PC/laptop/.. where you want.
+  5 Certainly, you can use NLT as a standalone relay agent in a public server, and relay everything back to your own PC/laptop/.. where you want. See demos in /test(https://github.com/lslzl3000/node-local-tunnel/tree/master/test).
 
 Limitation & work to do
 -----------------------
