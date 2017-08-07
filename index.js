@@ -1,6 +1,8 @@
 var util = require('util');
 var qs = require('querystring');
 
+var noop = function() {}
+
 function server(options){
 	options = util._extend({ssl:false, port:12345}, options);
 	// 1. [server itself]connect to the ws server
@@ -9,11 +11,12 @@ function server(options){
 	var socket = require('socket.io-client')('ws'+(options.ssl?'s':'')+'://localhost:' + options.port + (options.auth ? '?username='+options.auth.username +'&password='+options.auth.password : '') );
 	// 2. init self on ws server
 	socket.on('connect', function(){
-		console.log('[NLT] Connected to the tunnel')
+		options.connect ? options.connect() : noop();
 		socket.emit('init', {_type:'server'});
 	});
 	// 3. init client obj when server give back the client info
 	socket.on('client', function(data){
+		options.client ? options.client() : noop();
 		if(data == false){
 			client = null; path = null; filter = null;
 			for(i in serverNext)
@@ -21,7 +24,7 @@ function server(options){
 			serverRes = {};
 			serverNext = {};
 		}else{
-			console.log('[NLT] remote server online')
+			// console.log('[NLT] remote server online')
 			client = true;
 			path = data.path;
 			filter = data.filter;
@@ -39,6 +42,7 @@ function server(options){
 	});
 	// handle disconnect, empty everthing, go on next()
 	socket.on('disconnect', function(){
+		options.disconnect ? options.disconnect() : noop();
 		client = null; path = null; filter = null;
 		for(i in serverNext)
 			serverNext[i]();
@@ -98,6 +102,7 @@ function server(options){
 				}
 			}catch(e){
 				console.log('[NLT] error', e);
+				
 				pass = false;
 			}
 			// only relay those passed(path & filter) requests
@@ -150,14 +155,17 @@ function client(options){
 	var request = require('request');
 	var socket = require('socket.io-client')('ws'+(options.ssl?'s':'')+'://'+options.remoteHost + ':' + options.port + (options.auth ? '?username='+options.auth.username +'&password='+options.auth.password : '') );
 	socket.on('connect', function(){
-		console.log('[NLT] Local server online, ready to handle remote requests');
+		//console.log('[NLT] Local server online, ready to handle remote requests');
+		options.connect ? options.connect() : noop();
 		socket.emit('init', util._extend(options,{_type:'localServer'}));
 	});
 	socket.on('hold', function(){
-		console.log('[NLT] New client online, Sorry I have to put you on hold...')
+		options.hold ? options.hold() : noop();
+		// console.log('[NLT] New client online, Sorry I have to put you on hold...')
 	})
 	socket.on('back', function(){
-		console.log('[NLT] You are back online, ready to handle remote requests')
+		options.back ? options.back() : noop();
+		//console.log('[NLT] You are back online, ready to handle remote requests')
 	})
 	socket.on('req', function(data){
 		// don't follow redirect and ignore https cert error
@@ -175,7 +183,8 @@ function client(options){
 		// then construct a request to local server
 		request(reqOpt, function(err, response, body){
 			if(err)
-				console.log('[NLT] relay error', err);
+				options.error ? options.error(err) : noop();
+				//console.log('[NLT] relay error', err);
 			else
 				for(i in response.rawHeaders){
 					var header = response.rawHeaders[i].toLowerCase();
@@ -189,10 +198,12 @@ function client(options){
 		})
 	});
 	socket.on('disconnect', function(reason){
-		console.log('[NLT] Disconnect', reason);
+		options.disconnect ? options.disconnect(reason) : noop();
+		// console.log('[NLT] Disconnect', reason);
 	});
 	socket.on('error', function(reason){
-		console.log('[NLT] Cannot connect server:'+reason)
+		options.error ? options.error(reason) : noop();
+		// console.log('[NLT] Cannot connect server:'+reason)
 	})
 	return function(req, res, next){
 		next();
@@ -277,9 +288,11 @@ function init(options){
 		});
 	});
 	wsServer.listen(options.port).on('listening', function(){
-		console.log('[NLT] Server is ready on port ' + options.port);
+		options.listening ? options.listening() : noop();
+		//console.log('[NLT] Server is ready on port ' + options.port);
 	}).on('error', function(e){
-		console.log('[NLT] Setup error', e)
+		options.error ? options.error(e) : noop();
+		//console.log('[NLT] Setup error', e)
 	});
 }
 
