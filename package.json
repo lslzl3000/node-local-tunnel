@@ -1,7 +1,7 @@
 {
   "name": "node-local-tunnel",
   "version": "0.1.8",
-  "description": "A live secure tunnel redirect public requests to your own local server befind a NAT or firewall",
+  "description": "A live secure tunnel redirect public requests to your own local server behind a NAT or firewall",
   "main": "index.js",
   "dependencies": {
     "querystring": "^0.2.0",
